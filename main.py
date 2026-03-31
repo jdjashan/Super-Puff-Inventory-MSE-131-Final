@@ -22,11 +22,18 @@ def main():
     backlog_cost_per = st.slider("Select a backlog cost per item (for a whole year)", 5, 100, 50, 1 )
     SimTime = st.number_input("Simulation Weeks", 1, 200, 52,1)
     Weeks = st.number_input("Satring Week?", 1, 52, 1,1)
+    Distributor = st.selectbox("Choose a Distributor", ["Original", "ReliableRetails", "PremiuimProcess"])
+
 
     if st.button("Run simulation"):
-        sim_results = run_simulation(order_amount, SimTime, Weeks, fixed_order_cost, backlog_cost_per)
+        sim_results, sim_alerts = run_simulation(order_amount, SimTime, Weeks, fixed_order_cost, backlog_cost_per,Distributor)
         st.title("Results")
 
+
+        with st.expander("View Alerts"):
+            for alert in sim_alerts:
+                st.warning(alert)
+        
         st.header("Raw Data Chart")
         df = pd.DataFrame(sim_results)
         st.dataframe(sim_results)
@@ -40,6 +47,16 @@ def main():
 
         st.markdown(
         f'<h3 style="color: #e74c3c; text-align: center;">Final Cost: ${df["total_cost"].iloc[-1]:,.2f}</h3>',
+        unsafe_allow_html=True
+        )
+        
+        st.markdown(
+        f'<h3 style="color: #4AAD63; text-align: center;">Gross Revenue: ${df["Gross Revenue"].iloc[-1]:,.2f}</h3>',
+        unsafe_allow_html=True
+        )
+        
+        st.markdown(
+        f'<h3 style="color: #000A00; text-align: center;">Net Revenue: ${df["Net Revenue"].iloc[-1]:,.2f}</h3>',
         unsafe_allow_html=True
         )
 

@@ -1,17 +1,40 @@
 import random
 
-def run_simulation(order_amount, SimTime, Weeks, fixed_order_cost, backlog_cost_per):
+def run_simulation(order_amount, SimTime, Weeks, fixed_order_cost, backlog_cost_per,Distributor):
     # Name variables for everything in process
     Demand = 0
-    holding_cost = 50
+    holding_cost = 25
     items_backloged = 0
 
-    # Create Indexing for all Weekly Values
+    #Add variables for customer fatisfaction and leaving as well as sales
+    customerloss = 1.0
+    backlog_time = 0
+    sale_gain = 9.99
+
+    #Get Demand Perks
+    if Distributor == "Original":
+        delay_chance = 100
+        demand_multiple = 1
+    elif Distributor == "ReliableRetails":
+        delay_chance = 200
+        demand_multiple = 1
+        fixed_order_cost = fixed_order_cost*1.5
+    elif Distributor == "PremiuimProcess":
+        sale_gain = 8.99
+        delay_chance = 50
+        demand_multiple = 2
+    fixed_order_amount = order_amount
+
+
+
+    # Create Indexing for all Weekly Values, and alerts list
     results = []
+    alerts = []
 
     #Have variables for totals
     total_costs = 0
     total_holding = 0
+    total_made = 0
 
     #Add variables for seasons
     if Weeks <= 12:
@@ -32,12 +55,20 @@ def run_simulation(order_amount, SimTime, Weeks, fixed_order_cost, backlog_cost_
     for i in range (SimTime):
         results.append({
         "week": Weeks,
-        "demand": int(Demand/52),
+        "demand": ((int(Demand/(customerloss*52))*demand_multiple)),
         "total_cost": total_costs,
         "inventory": total_holding,
         "season": SeasonName,
-        "order_amount": order_amount
+        "order_amount": order_amount,
+        "Gross Revenue": total_made,
+        "Net Revenue": total_made - total_costs
         })
+        delay = random.randint(1,delay_chance)
+        if delay < 5:
+            order_amount = 0
+            alerts.append(f"There was a delay and no products shipped to inventory warehouse in week {Weeks}")
+        else:
+            order_amount = fixed_order_amount
         if Season == 1:
             Demand, Weeks, Season, SeasonName = Winter_Demand(Weeks)
         elif Season == 2:
@@ -47,14 +78,27 @@ def run_simulation(order_amount, SimTime, Weeks, fixed_order_cost, backlog_cost_
         elif Season == 4:
             Demand, Weeks, Season, SeasonName = Fall_Demand(Weeks)
 
+        if items_backloged > 0:
+            backlog_time += 1
+            if backlog_time >= 4:
+                customerloss +=0.25
+        else:
+            backlog_time =0
+            if customerloss > 1:
+                customerloss -= 0.25
+
         total_costs = total_costs + fixed_order_cost
-        total_holding = total_holding + (order_amount - int(Demand/52))
+        total_holding = total_holding + (order_amount - (int((Demand/(customerloss*52))*demand_multiple)))
         if total_holding < 0:
             items_backloged = abs(total_holding)
             total_costs = total_costs + items_backloged*(backlog_cost_per/52)
+            if total_holding > -(int(Demand/(customerloss*52))):
+                total_made = total_made + sale_gain*(total_holding + (((int(Demand/(customerloss*52)*demand_multiple)))))
         elif total_holding > 0:
             total_costs = total_costs + total_holding*(holding_cost/52)
-    return results
+            total_made = total_made + sale_gain*(int((Demand/(customerloss*52)*demand_multiple)))
+            items_backloged = 0
+    return results, alerts
 
 
 
